@@ -1,49 +1,39 @@
 Overview
 ========
 
-Welcome to Astronomer! This project was generated after you ran 'astro dev init' using the Astronomer CLI. This readme describes the contents of the project, as well as how to run Apache Airflow on your local machine.
+IPMA is the acronym for Portuguese Institute of the Sea and the Atmosphere. This project uses two API's made available by this institute, where we have data from atmospheric sensors installed throughout mainland Portugal and Islands (Azores and Madeira).
+
+These data are stored in an instance of Postgres (running on docker), as well as Astronomer to orchestrate the data collection.
 
 Project Contents
 ================
 
-Your Astro project contains the following files and folders:
+Stations:
 
-- dags: This folder contains the Python files for your Airflow DAGs. By default, this directory includes two example DAGs:
-    - `example_dag_basic`: This DAG shows a simple ETL data pipeline example with three TaskFlow API tasks that run daily.
-    - `example_dag_advanced`: This advanced DAG showcases a variety of Airflow features like branching, Jinja templates, task groups and several Airflow operators.
-- Dockerfile: This file contains a versioned Astro Runtime Docker image that provides a differentiated Airflow experience. If you want to execute other commands or overrides at runtime, specify them here.
-- include: This folder contains any additional files that you want to include as part of your project. It is empty by default.
-- packages.txt: Install OS-level packages needed for your project by adding them to this file. It is empty by default.
-- requirements.txt: Install Python packages needed for your project by adding them to this file. It is empty by default.
-- plugins: Add custom or community plugins for your project to this file. It is empty by default.
-- airflow_settings.yaml: Use this local-only file to specify Airflow Connections, Variables, and Pools instead of entering them in the Airflow UI as you develop DAGs in this project.
+https://api.ipma.pt/open-data/observation/meteorology/stations/stations.json
 
-Deploy Your Project Locally
-===========================
+Result (formato json): [ { "geometry": { "type": "Point", "coordinates": [-7.821, 37.033] }, "type": "Feature", "properties": { "idEstacao": 1210881, "localEstacao": "Olh\u00e3o, EPPO" } }, ...]
+coordinates: coordinate geographic of station [longitude, latitude] (degrees decimais)
+idEstacao: id of station
+localEstacao: location of station
 
-1. Start Airflow on your local machine by running 'astro dev start'.
+DAG: get_stations.py
 
-This command will spin up 4 Docker containers on your machine, each for a different Airflow component:
+Observations:
 
-- Postgres: Airflow's Metadata Database
-- Webserver: The Airflow component responsible for rendering the Airflow UI
-- Scheduler: The Airflow component responsible for monitoring and triggering tasks
-- Triggerer: The Airflow component responsible for triggering deferred tasks
+https://api.ipma.pt/open-data/observation/meteorology/stations/observations.json
+Notes: Hourly update rate. (value "-99.0" = nodata)
 
-2. Verify that all 4 Docker containers were created by running 'docker ps'.
+Result (json format): [{ "{YYYY-mm-ddThh:mi}": { "{Stationid}": { "WindintensityKM": 0.0, "temperature": 7.7, "WindDirectidid": 3, "Accumulated prec": 0.0 , "wind intensity": 0.0, "humidity": 89.0, "pressure": -99.0, "radiation": -99.0 }, ...}}]
+YYYY-mm-ddThh:mi: observation date/time
+idEstacao: station identifier (see auxiliary service "List of weather station identifiers")
+windintensityKM: wind intensity recorded at a height of 10 meters (km/h)
+temperature: air temperature recorded at a height of 1.5 meters, hourly average (ºC)
+idDireccVento: wind direction class to the prevailing wind direction recorded at 10 meters height (0: no direction, 1 or 9: "N", 2: "NE", 3: "E", 4: "SE", 5: "S", 6: "SW", 7: "W", 8: "NW")
+PrecAccumulated: precipitation recorded at a height of 1.5 meters, accumulated hourly value (mm)
+wind intensity: wind intensity recorded at a height of 10 meters (m/s)
+humidity: relative humidity recorded at a height of 1.5 meters, hourly average (%)
+pressure: atmospheric pressure, reduced to mean sea level (MSL), hourly average (hPa)
+radiation: solar radiation (kJ/m2)
 
-Note: Running 'astro dev start' will start your project with the Airflow Webserver exposed at port 8080 and Postgres exposed at port 5432. If you already have either of those ports allocated, you can either stop your existing Docker containers or change the port.
-
-3. Access the Airflow UI for your local Airflow project. To do so, go to http://localhost:8080/ and log in with 'admin' for both your Username and Password.
-
-You should also be able to access your Postgres Database at 'localhost:5432/postgres'.
-
-Deploy Your Project to Astronomer
-=================================
-
-If you have an Astronomer account, pushing code to a Deployment on Astronomer is simple. For deploying instructions, refer to Astronomer documentation: https://docs.astronomer.io/cloud/deploy-code/
-
-Contact
-=======
-
-The Astronomer CLI is maintained with love by the Astronomer team. To report a bug or suggest a change, reach out to our support.
+DAG: get_observations.py
